@@ -6,6 +6,7 @@
 
 data/*/*
 !data/process/*
+!code/mothur/*
 !README.md
 
 *.qsub*
