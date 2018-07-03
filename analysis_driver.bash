@@ -1,3 +1,11 @@
+# Download Mothur
+
+wget --no-check-certificate https://github.com/mothur/mothur/releases/download/v1.40.5/Mothur.linux_64.zip
+unzip Mothur.linux_64.zip
+mv mothur code/
+rm Mothur.linux_64.zip
+rm -rf __MACOSX
+
 # Download the raw data and put them into the data/raw directory
 
 wget --no-check-certificate https://www.mothur.org/MiSeqDevelopmentData/StabilityWMetaG.tar
