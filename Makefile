@@ -3,6 +3,7 @@ FIGS = results/figures
 TABLES = results/tables
 PROC = data/process
 FINAL = submission/
+MOTHUR = code/mothur/mothur
 
 # utility function to print various variables. For example, running the
 # following at the command line:
@@ -14,6 +15,14 @@ FINAL = submission/
 print-%:
 	@echo '$*=$($*)'
 
+# Download Mothur
+
+code/mothur/mothur : 
+	wget --no-check-certificate https://github.com/mothur/mothur/releases/download/v1.40.5/Mothur.linux_64.zip
+	unzip Mothur.linux_64.zip
+	mv mothur code/
+	rm Mothur.linux_64.zip
+	rm -rf __MACOSX
 
 ################################################################################
 #
@@ -34,15 +43,15 @@ print-%:
 # also contains the reference taxonomy. We will limit the databases to only
 # include bacterial sequences.
 
-$(REFS)/silva.seed.align :
+$(REFS)/silva.seed.align :	$(MOTHUR)
 	wget -N http://mothur.org/w/images/1/15/Silva.seed_v123.tgz
 	tar xvzf Silva.seed_v123.tgz silva.seed_v123.align silva.seed_v123.tax
-	mothur "#get.lineage(fasta=silva.seed_v123.align, taxonomy=silva.seed_v123.tax, taxon=Bacteria);degap.seqs(fasta=silva.seed_v123.pick.align, processors=8)"
+	$(MOTHUR) "#get.lineage(fasta=silva.seed_v123.align, taxonomy=silva.seed_v123.tax, taxon=Bacteria);degap.seqs(fasta=silva.seed_v123.pick.align, processors=8)"
 	mv silva.seed_v123.pick.align $(REFS)/silva.seed.align
 	rm Silva.seed_v123.tgz silva.seed_v123.*
 
-$(REFS)/silva.v4.align : $(REFS)/silva.seed.align
-	mothur "#pcr.seqs(fasta=$(REFS)/silva.seed.align, start=11894, end=25319, keepdots=F, processors=8)"
+$(REFS)/silva.v4.align : $(REFS)/silva.seed.align	$(MOTHUR)
+	$(MOTHUR) "#pcr.seqs(fasta=$(REFS)/silva.seed.align, start=11894, end=25319, keepdots=F, processors=8)"
 	mv $(REFS)/silva.seed.pcr.align $(REFS)/silva.v4.align
 
 # Next, we want the RDP reference taxonomy. The current version is v10 and we
@@ -65,6 +74,13 @@ $(REFS)/trainset14_032015.% :
 #
 ################################################################################
 
+# Download the raw data and put them into the data/raw directory
+data/raw/StabilityWMetaG.tar : 
+	wget --no-check-certificate https://www.mothur.org/MiSeqDevelopmentData/StabilityWMetaG.tar
+	tar xvf StabilityWMetaG.tar -C data/raw/
+	gunzip data/raw/*.gz
+	mv StabilityWMetaG.tar data/raw
+
 # Change stability to the * part of your *.files file that lives in data/raw/
 BASIC_STEM = data/mothur/stability.trim.contigs.good.unique.good.filter.unique.precluster
 
@@ -77,9 +93,10 @@ BASIC_STEM = data/mothur/stability.trim.contigs.good.unique.good.filter.unique.p
 $(BASIC_STEM).denovo.uchime.pick.pick.count_table $(BASIC_STEM).pick.pick.fasta $(BASIC_STEM).pick.pds.wang.pick.taxonomy : code/get_good_seqs.batch\
 					data/references/silva.v4.align\
 					data/references/trainset14_032015.pds.fasta\
-					data/references/trainset14_032015.pds.tax
-	mothur code/get_good_seqs.batch;\
-	rm data/mothur/*.map
+					data/references/trainset14_032015.pds.tax\
+					data/raw/StabilityWMetaG.tar\
+					$(MOTHUR)
+	$(MOTHUR) code/get_good_seqs.batch;\
 
 
 
@@ -89,11 +106,12 @@ $(BASIC_STEM).denovo.uchime.pick.pick.count_table $(BASIC_STEM).pick.pick.fasta 
 # Edit code/get_shared_otus.batch to include the proper root name of your files file
 # Edit code/get_shared_otus.batch to include the proper group names to remove
 
-$(BASIC_STEM).pick.pick.pick.opti_mcc.unique_list.shared $(BASIC_STEM).pick.pick.pick.opti_mcc.unique_list.0.03.cons.taxonomy : code/get_shared_otus.batch\
+$(BASIC_STEM).pick.pick.pick.opti_mcc.shared $(BASIC_STEM).pick.pick.pick.opti_mcc.0.03.cons.taxonomy : code/get_shared_otus.batch\
 					$(BASIC_STEM).denovo.uchime.pick.pick.count_table\
 					$(BASIC_STEM).pick.pick.fasta\
-					$(BASIC_STEM).pick.pds.wang.pick.taxonomy
-	mothur code/get_shared_otus.batch
+					$(BASIC_STEM).pick.pds.wang.pick.taxonomy\
+					$(MOTHUR)		
+	$(MOTHUR) code/get_shared_otus.batch
 	rm $(BASIC_STEM).denovo.uchime.pick.pick.pick.count_table
 	rm $(BASIC_STEM).pick.pick.pick.fasta
 	rm $(BASIC_STEM).pick.pds.wang.pick.pick.taxonomy;
@@ -107,8 +125,9 @@ $(BASIC_STEM).pick.pick.pick.opti_mcc.unique_list.shared $(BASIC_STEM).pick.pick
 $(BASIC_STEM).pick.pick.pick.error.summary : code/get_error.batch\
 					$(BASIC_STEM).denovo.uchime.pick.pick.count_table\
 					$(BASIC_STEM).pick.pick.fasta\
-					$(REFS)/HMP_MOCK.v4.fasta
-	mothur code/get_error.batch
+					$(REFS)/HMP_MOCK.v4.fasta\
+					$(MOTHUR)
+	$(MOTHUR) code/get_error.batch
 
 
 
@@ -119,6 +138,15 @@ $(BASIC_STEM).pick.pick.pick.error.summary : code/get_error.batch\
 #	Run scripts to generate figures and tables
 #
 ################################################################################
+
+# Generate nmds axes file for plotting from shared file
+$(BASIC_STEM).pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.nmds.axes :	$(BASIC_STEM).pick.pick.pick.opti_mcc.shared	$(MOTHUR)
+	$(MOTHUR) code/get_nmds_data.batch
+
+# Construct NMDS png file
+results/figures/nmds_figure.png : code/plot_nmds.R\
+	$(BASIC_STEM).pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.nmds.axes
+	R -e "source('code/plot_nmds.R'); plot_nmds('data/mothur/stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.nmds.axes')"
 
 
 
@@ -131,7 +159,8 @@ $(BASIC_STEM).pick.pick.pick.error.summary : code/get_error.batch\
 ################################################################################
 
 
-$(FINAL)/manuscript.% : 			\ #include data files that are needed for paper don't leave this line with a : \
+$(FINAL)/manuscript.% : 			results/figures/nmds_figure.png\ #include data files that are needed for paper don't leave this line with a : \
+						$(BASIC_STEM).pick.pick.pick.opti_mcc.shared\
 						$(FINAL)/mbio.csl\
 						$(FINAL)/references.bib\
 						$(FINAL)/manuscript.Rmd
@@ -140,8 +169,6 @@ $(FINAL)/manuscript.% : 			\ #include data files that are needed for paper don't
 	rm $(FINAL)/manuscript.utf8.md
 
 
-write.paper : $(TABLES)/table_1.pdf $(TABLES)/table_2.pdf\ #customize to include
-				$(FIGS)/figure_1.pdf $(FIGS)/figure_2.pdf\	# appropriate tables and
-				$(FIGS)/figure_3.pdf $(FIGS)/figure_4.pdf\	# figures
+write.paper : results/figures/nmds_figure.png\
 				$(FINAL)/manuscript.Rmd $(FINAL)/manuscript.md\
 				$(FINAL)/manuscript.tex $(FINAL)/manuscript.pdf
