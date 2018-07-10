@@ -1,11 +1,7 @@
 ---
 title: "**NAME OF THIS STUDY**"
 bibliography: references.bib
-output:
-  pdf_document:
-    keep_tex: true
-    includes:
-      in_header: header.tex
+output: word_document
 csl: mbio.csl #Get themes at https://github.com/citation-style-language/styles
 fontsize: 11pt
 geometry: margin=1.0in
