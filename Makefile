@@ -2,7 +2,7 @@ REFS = data/references
 FIGS = results/figures
 TABLES = results/tables
 PROC = data/process
-FINAL = submission/
+FINAL = submission
 MOTHUR = code/mothur/mothur
 
 # utility function to print various variables. For example, running the
@@ -159,16 +159,12 @@ results/figures/nmds_figure.png : code/plot_nmds.R\
 ################################################################################
 
 
-$(FINAL)/manuscript.% : 			results/figures/nmds_figure.png\ #include data files that are needed for paper don't leave this line with a : \
-						$(BASIC_STEM).pick.pick.pick.opti_mcc.shared\
+submission/manuscript.html : 			$(BASIC_STEM).pick.pick.pick.opti_mcc.shared\
+						$(FIGS)/nmds_figure.png\
 						$(FINAL)/mbio.csl\
 						$(FINAL)/references.bib\
 						$(FINAL)/manuscript.Rmd
 	R -e 'render("$(FINAL)/manuscript.Rmd", clean=FALSE)'
-	mv $(FINAL)/manuscript.knit.md submission/manuscript.md
-	rm $(FINAL)/manuscript.utf8.md
 
 
-write.paper : results/figures/nmds_figure.png\
-				$(FINAL)/manuscript.Rmd $(FINAL)/manuscript.md\
-				$(FINAL)/manuscript.tex $(FINAL)/manuscript.pdf
+write.paper :	$(FINAL)/manuscript.Rmd $(FINAL)/manuscript.html\
