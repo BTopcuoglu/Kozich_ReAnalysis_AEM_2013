@@ -139,14 +139,14 @@ $(BASIC_STEM).pick.pick.pick.error.summary : code/get_error.batch\
 #
 ################################################################################
 
-# Generate nmds axes file for plotting from shared file
-$(BASIC_STEM).pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.nmds.axes :	$(BASIC_STEM).pick.pick.pick.opti_mcc.shared	$(MOTHUR)
-	$(MOTHUR) code/get_nmds_data.batch
+# Generate PCoA axes file for plotting from shared file
+$(BASIC_STEM).pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.pcoa.axes :	$(BASIC_STEM).pick.pick.pick.opti_mcc.shared	$(MOTHUR)
+	$(MOTHUR) code/get_pcoa_data.batch
 
-# Construct NMDS png file
-results/figures/nmds_figure.png : code/plot_nmds.R\
-	$(BASIC_STEM).pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.nmds.axes
-	R -e "source('code/plot_nmds.R'); plot_nmds('data/mothur/stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.nmds.axes')"
+# Construct PCoA png file
+results/figures/pcoa_figure.png : code/plot_pcoa.R\
+	$(BASIC_STEM).pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.pcoa.axes
+	R -e "source('code/plot_pcoa.R'); plot_pcoa('data/mothur/stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.thetayc.0.03.lt.ave.pcoa.axes')"
 
 
 
@@ -160,7 +160,7 @@ results/figures/nmds_figure.png : code/plot_nmds.R\
 
 
 submission/manuscript.html : 			$(BASIC_STEM).pick.pick.pick.opti_mcc.shared\
-						$(FIGS)/nmds_figure.png\
+						$(FIGS)/pcoa_figure.png\
 						$(FINAL)/mbio.csl\
 						$(FINAL)/references.bib\
 						$(FINAL)/manuscript.Rmd
